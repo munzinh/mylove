@@ -23,6 +23,8 @@
       min-height: 100vh;
       padding: 1rem;
       position: relative;
+      overflow: hidden;
+      touch-action: manipulation;
     }
     #question {
       font-size: 1.75rem;
@@ -33,6 +35,7 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.1);
       max-width: 90%;
       text-align: center;
+      z-index: 100;
     }
     .btn {
       font-size: 1rem;
@@ -41,18 +44,32 @@
       border: none;
       border-radius: 50px;
       cursor: pointer;
-      transition: transform 0.2s ease, background 0.2s ease;
+      transition: all 0.2s ease;
       box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    #yesBtn { background: var(--pink); color: white; }
-    #yesBtn:hover { background: var(--pink-dark); transform: translateY(-2px); }
+    #yesBtn { 
+      background: var(--pink); 
+      color: white; 
+      position: relative;
+      z-index: 10;
+    }
+    #yesBtn:hover, #yesBtn:active { 
+      background: var(--pink-dark); 
+      transform: translateY(-2px) scale(1.05);
+    }
     #noBtn {
       position: absolute;
       background: white;
       color: var(--pink-dark);
       border: 2px solid var(--pink);
+      transition: all 0.1s linear;
+      z-index: 5;
     }
-    #noBtn:hover { background: var(--pink-light); transform: translateY(-2px); }
+    #noBtn:hover, #noBtn:active { 
+      background: var(--pink-light); 
+    }
 
     #message {
       display: none;
@@ -60,14 +77,19 @@
       font-size: 1.5rem;
       color: var(--pink-dark);
       text-align: center;
+      z-index: 100;
     }
-    /* Heart style & animation */
     .heart {
       display: inline-block;
       margin: 0 0.3rem;
       font-size: 2rem;
       color: var(--pink);
       animation: heartbeat 1s infinite;
+    }
+    .text {
+      display: inline-block;
+      font-size: 1.5rem;
+      vertical-align: middle;
     }
     @keyframes heartbeat {
       0%, 100% { transform: scale(1); }
@@ -76,17 +98,49 @@
       60% { transform: scale(1.3); }
     }
 
+    /* Animation chạy trốn */
+    @keyframes runAway {
+      0% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(10px, -15px) rotate(5deg); }
+      50% { transform: translate(-20px, 10px) rotate(-5deg); }
+      75% { transform: translate(15px, 5px) rotate(3deg); }
+      100% { transform: translate(0, 0) rotate(0deg); }
+    }
+
+    /* Hiệu ứng khi chạm vào nút Không */
+    @keyframes tapEffect {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.9); }
+      100% { transform: scale(1); }
+    }
+
     footer {
       margin-top: 2rem;
       font-size: 0.8rem;
       color: #666;
+      z-index: 100;
     }
     @media (min-width: 600px) {
       #question { font-size: 2rem; }
-      #message { font-size: 2rem; }
+      .text { font-size: 2rem; }
     }
     @media (min-width: 1024px) {
-      #message { font-size: 2.5rem; }
+      .text { font-size: 2.5rem; }
+    }
+    
+    /* Hiệu ứng bong bóng trái tim */
+    .heart-bubble {
+      position: absolute;
+      font-size: 1.5rem;
+      color: var(--pink);
+      opacity: 0;
+      z-index: 1;
+      pointer-events: none;
+      animation: floatUp 3s ease-in forwards;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(0) scale(0.5); opacity: 1; }
+      100% { transform: translateY(-100px) scale(1.2); opacity: 0; }
     }
   </style>
 </head>
@@ -98,7 +152,7 @@
 
   <div id="message">
     <span class="heart">❤</span>
-    <span class="text">Anh cũng yêu em nhìu nắm bé Bông của anhh!</span>
+    <span class="text">Anh cũng yêu emmmm nhìu nắm bé bông của anhh!</span>
     <span class="heart">❤</span>
   </div>
 
@@ -106,24 +160,247 @@
     const noBtn = document.getElementById('noBtn');
     const yesBtn = document.getElementById('yesBtn');
     const message = document.getElementById('message');
-
-    function moveNoButton() {
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-      const x = Math.random() * (w - noBtn.offsetWidth - 20);
-      const y = Math.random() * (h - noBtn.offsetHeight - 20);
+    const question = document.getElementById('question');
+    
+    // Thiết lập tốc độ và trạng thái
+    let speed = 15;
+    let isRunningAway = false;
+    let panicLevel = 0;
+    let touchTimeout;
+    let lastTapTime = 0;
+    
+    // Vị trí ngẫu nhiên ban đầu
+    moveToRandomPosition();
+    
+    // Tạo bong bóng trái tim
+    function createHeartBubble(x, y) {
+      const heart = document.createElement('div');
+      heart.className = 'heart-bubble';
+      heart.innerHTML = '❤';
+      heart.style.left = `${x}px`;
+      heart.style.top = `${y}px`;
+      document.body.appendChild(heart);
+      
+      setTimeout(() => {
+        heart.remove();
+      }, 3000);
+    }
+    
+    function moveToRandomPosition() {
+      const w = window.innerWidth - noBtn.offsetWidth;
+      const h = window.innerHeight - noBtn.offsetHeight;
+      const x = Math.max(0, Math.min(w, Math.random() * w));
+      const y = Math.max(0, Math.min(h, Math.random() * h));
+      
       noBtn.style.left = `${x}px`;
       noBtn.style.top = `${y}px`;
     }
+    
+    // Hàm làm nút "hoảng loạn"
+    function panic() {
+      if (isRunningAway) return;
+      
+      isRunningAway = true;
+      panicLevel++;
+      
+      // Tăng tốc độ khi hoảng loạn
+      speed = 15 + (panicLevel * 5);
+      
+      // Thêm hiệu ứng run rẩy
+      noBtn.style.animation = 'runAway 0.1s infinite';
+      
+      // Tạo bong bóng trái tim
+      const btnRect = noBtn.getBoundingClientRect();
+      createHeartBubble(btnRect.left + btnRect.width/2, btnRect.top + btnRect.height/2);
+      
+      // Di chuyển ngẫu nhiên cực nhanh
+      const panicInterval = setInterval(() => {
+        const w = window.innerWidth - noBtn.offsetWidth;
+        const h = window.innerHeight - noBtn.offsetHeight;
+        const x = Math.random() * w;
+        const y = Math.random() * h;
+        
+        noBtn.style.transition = `all ${0.05 + Math.random() * 0.1}s linear`;
+        noBtn.style.left = `${x}px`;
+        noBtn.style.top = `${y}px`;
+        
+        // Tạo thêm bong bóng khi di chuyển
+        if (Math.random() > 0.7) {
+          createHeartBubble(x + noBtn.offsetWidth/2, y + noBtn.offsetHeight/2);
+        }
+      }, 150);
+      
+      // Dừng hoảng loạn sau 1.5s
+      setTimeout(() => {
+        clearInterval(panicInterval);
+        noBtn.style.animation = '';
+        isRunningAway = false;
+      }, 1500);
+    }
+    
+    // Hàm tránh chạm cực nhanh (cho mobile)
+    function avoidTouch(e) {
+      if (isRunningAway) return;
+      
+      const touch = e.touches[0] || e.changedTouches[0];
+      if (!touch) return;
+      
+      const touchX = touch.clientX;
+      const touchY = touch.clientY;
+      
+      const btnRect = noBtn.getBoundingClientRect();
+      const btnX = btnRect.left + btnRect.width / 2;
+      const btnY = btnRect.top + btnRect.height / 2;
+      
+      const distanceX = btnX - touchX;
+      const distanceY = btnY - touchY;
+      const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+      
+      // Khi chạm đến gần
+      if (distance < 150) {
+        const angle = Math.atan2(distanceY, distanceX);
+        
+        // Tính vị trí mới với tốc độ cao
+        let newX = btnX + Math.cos(angle) * speed;
+        let newY = btnY + Math.sin(angle) * speed;
+        
+        // Giới hạn trong màn hình
+        newX = Math.max(0, Math.min(window.innerWidth - noBtn.offsetWidth, newX));
+        newY = Math.max(0, Math.min(window.innerHeight - noBtn.offsetHeight, newY));
+        
+        // Thêm độ "run rẩy"
+        newX += (Math.random() * 30 - 15);
+        newY += (Math.random() * 30 - 15);
+        
+        // Áp dụng chuyển động
+        noBtn.style.transition = 'all 0.1s linear';
+        noBtn.style.left = `${newX}px`;
+        noBtn.style.top = `${newY}px`;
+        
+        // Khi chạm quá gần thì hoảng loạn
+        if (distance < 80) {
+          panic();
+        }
+      }
+    }
+    
+    // Hàm tránh chuột cực nhanh (cho desktop)
+    function avoidMouse(e) {
+      if (isRunningAway) return;
+      
+      const mouseX = e.clientX;
+      const mouseY = e.clientY;
+      
+      const btnRect = noBtn.getBoundingClientRect();
+      const btnX = btnRect.left + btnRect.width / 2;
+      const btnY = btnRect.top + btnRect.height / 2;
+      
+      const distanceX = btnX - mouseX;
+      const distanceY = btnY - mouseY;
+      const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
+      
+      // Khi chuột đến gần
+      if (distance < 150) {
+        const angle = Math.atan2(distanceY, distanceX);
+        
+        // Tính vị trí mới với tốc độ cao
+        let newX = btnX + Math.cos(angle) * speed;
+        let newY = btnY + Math.sin(angle) * speed;
+        
+        // Giới hạn trong màn hình
+        newX = Math.max(0, Math.min(window.innerWidth - noBtn.offsetWidth, newX));
+        newY = Math.max(0, Math.min(window.innerHeight - noBtn.offsetHeight, newY));
+        
+        // Thêm độ "run rẩy"
+        newX += (Math.random() * 20 - 10);
+        newY += (Math.random() * 20 - 10);
+        
+        // Áp dụng chuyển động
+        noBtn.style.transition = 'all 0.2s linear';
+        noBtn.style.left = `${newX}px`;
+        noBtn.style.top = `${newY}px`;
+        
+        // Khi chuột quá gần thì hoảng loạn
+        if (distance < 50) {
+          panic();
+        }
+      }
+    }
+    
+    // Xử lý sự kiện cho cả mobile và desktop
+    document.addEventListener('mousemove', avoidMouse);
+    document.addEventListener('touchmove', avoidTouch);
+    
+    // Khi click vào nút Không (cho desktop)
+    noBtn.addEventListener('click', () => {
+      panic();
+      setTimeout(() => {
+        alert('Sao em nỡ từ chối anh như vậy 😢');
+      }, 300);
+    });
+    
+    // Khi chạm vào nút Không (cho mobile)
+    noBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      const currentTime = new Date().getTime();
+      const tapLength = currentTime - lastTapTime;
+      
+      // Xử lý double tap
+      if (tapLength < 300 && tapLength > 0) {
+        panic();
+        setTimeout(() => {
+          alert('Sao em nỡ từ chối anh như vậy 😢');
+        }, 300);
+      } else {
+        // Hiệu ứng khi chạm
+        noBtn.style.animation = 'tapEffect 0.3s';
+        setTimeout(() => {
+          noBtn.style.animation = '';
+        }, 300);
+      }
+      lastTapTime = currentTime;
+    });
 
-    noBtn.addEventListener('mouseover', moveNoButton);
-    noBtn.addEventListener('click', () => alert('Đừng chối nữa, em yêu anh mà!'));
-
-    yesBtn.addEventListener('click', () => {
-      document.getElementById('question').style.display = 'none';
+    // Khi click vào nút Có
+    yesBtn.addEventListener('click', showLoveMessage);
+    yesBtn.addEventListener('touchend', showLoveMessage);
+    
+    function showLoveMessage() {
+      question.style.display = 'none';
       yesBtn.style.display = 'none';
       noBtn.style.display = 'none';
       message.style.display = 'block';
+      
+      // Tạo nhiều bong bóng trái tim
+      for (let i = 0; i < 2; i++) {
+        setTimeout(() => {
+          const x = Math.random() * window.innerWidth;
+          const y = window.innerHeight;
+          createHeartBubble(x, y);
+        }, i * 200);
+      }
+      
+      // Dừng theo dõi sự kiện
+      document.removeEventListener('mousemove', avoidMouse);
+      document.removeEventListener('touchmove', avoidTouch);
+    }
+    
+    // Thi thoảng nút tự động nhảy dựng lên
+    setInterval(() => {
+      if (!isRunningAway && Math.random() > 0.7) {
+        noBtn.style.transform = 'translateY(-5px) rotate(5deg)';
+        setTimeout(() => {
+          noBtn.style.transform = '';
+        }, 200);
+      }
+    }, 3000);
+    
+    // Xử lý thay đổi kích thước màn hình
+    window.addEventListener('resize', () => {
+      const btnRect = noBtn.getBoundingClientRect();
+      if (btnRect.right > window.innerWidth || btnRect.bottom > window.innerHeight) {
+        moveToRandomPosition();
+      }
     });
   </script>
 
