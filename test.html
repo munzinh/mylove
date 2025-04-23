@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Em có yêu anh không?</title>
+  <style>
+    :root {
+      --pink-light: #ffe4ea;
+      --pink: #ff7096;
+      --pink-dark: #e63950;
+      --text-dark: #333;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--pink-light);
+      color: var(--text-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+    #question {
+      font-size: 1.75rem;
+      margin-bottom: 2rem;
+      padding: 1rem 1.5rem;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      max-width: 90%;
+      text-align: center;
+    }
+    .btn {
+      font-size: 1rem;
+      padding: 0.6rem 1.5rem;
+      margin: 0.5rem;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    }
+    #yesBtn {
+      background: var(--pink);
+      color: white;
+    }
+    #yesBtn:hover {
+      background: var(--pink-dark);
+      transform: translateY(-2px);
+    }
+    #noBtn {
+      position: absolute;
+      background: white;
+      color: var(--pink-dark);
+      border: 2px solid var(--pink);
+    }
+    #noBtn:hover {
+      background: var(--pink-light);
+      transform: translateY(-2px);
+    }
+    footer {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: #666;
+    }
+
+    /* MEDIA QUERIES */
+    @media (min-width: 600px) {
+      #question { font-size: 2rem; padding: 1rem 2rem; max-width: 60%; }
+      .btn { font-size: 1.1rem; padding: 0.75rem 2rem; }
+    }
+    @media (min-width: 1024px) {
+      #question { font-size: 2.25rem; }
+      .btn { font-size: 1.2rem; padding: 1rem 2.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="question">Em có yêu anh không?</div>
+  <button id="yesBtn" class="btn">Có</button>
+  <button id="noBtn" class="btn">Không</button>
+
+  <script>
+    const noBtn = document.getElementById('noBtn');
+    const yesBtn = document.getElementById('yesBtn');
+
+    function moveNoButton() {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const x = Math.random() * (w - noBtn.offsetWidth - 20);
+      const y = Math.random() * (h - noBtn.offsetHeight - 20);
+      noBtn.style.left = `${x}px`;
+      noBtn.style.top = `${y}px`;
+    }
+
+    noBtn.addEventListener('mouseover', moveNoButton);
+    yesBtn.addEventListener('click', () => alert('Anh cũng yêu emmmm nhìu nắm bé bông của anhh! ❤'));
+    noBtn.addEventListener('click', () => alert('Đừng chối nữa, em yêu anh mà!'));
+  </script>
+
+  <footer>Made with ❤️ by anh iu của em aka ông xã aka munzinh</footer>
+</body>
+</html>
