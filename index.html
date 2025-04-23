@@ -22,6 +22,7 @@
       justify-content: center;
       min-height: 100vh;
       padding: 1rem;
+      position: relative;
     }
     #question {
       font-size: 1.75rem;
@@ -43,38 +44,49 @@
       transition: transform 0.2s ease, background 0.2s ease;
       box-shadow: 0 3px 6px rgba(0,0,0,0.1);
     }
-    #yesBtn {
-      background: var(--pink);
-      color: white;
-    }
-    #yesBtn:hover {
-      background: var(--pink-dark);
-      transform: translateY(-2px);
-    }
+    #yesBtn { background: var(--pink); color: white; }
+    #yesBtn:hover { background: var(--pink-dark); transform: translateY(-2px); }
     #noBtn {
       position: absolute;
       background: white;
       color: var(--pink-dark);
       border: 2px solid var(--pink);
     }
-    #noBtn:hover {
-      background: var(--pink-light);
-      transform: translateY(-2px);
+    #noBtn:hover { background: var(--pink-light); transform: translateY(-2px); }
+
+    #message {
+      display: none;
+      margin-top: 2rem;
+      font-size: 1.5rem;
+      color: var(--pink-dark);
+      text-align: center;
     }
+    /* Heart style & animation */
+    .heart {
+      display: inline-block;
+      margin: 0 0.3rem;
+      font-size: 2rem;
+      color: var(--pink);
+      animation: heartbeat 1s infinite;
+    }
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      25% { transform: scale(1.3); }
+      40% { transform: scale(1); }
+      60% { transform: scale(1.3); }
+    }
+
     footer {
       margin-top: 2rem;
       font-size: 0.8rem;
       color: #666;
     }
-
-    /* MEDIA QUERIES */
     @media (min-width: 600px) {
-      #question { font-size: 2rem; padding: 1rem 2rem; max-width: 60%; }
-      .btn { font-size: 1.1rem; padding: 0.75rem 2rem; }
+      #question { font-size: 2rem; }
+      #message { font-size: 2rem; }
     }
     @media (min-width: 1024px) {
-      #question { font-size: 2.25rem; }
-      .btn { font-size: 1.2rem; padding: 1rem 2.5rem; }
+      #message { font-size: 2.5rem; }
     }
   </style>
 </head>
@@ -84,9 +96,16 @@
   <button id="yesBtn" class="btn">Có</button>
   <button id="noBtn" class="btn">Không</button>
 
+  <div id="message">
+    <span class="heart">❤</span>
+    <span class="text">Anh cũng yêu em nhìu nắm bé bông của anhh!</span>
+    <span class="heart">❤</span>
+  </div>
+
   <script>
     const noBtn = document.getElementById('noBtn');
     const yesBtn = document.getElementById('yesBtn');
+    const message = document.getElementById('message');
 
     function moveNoButton() {
       const w = window.innerWidth;
@@ -98,8 +117,14 @@
     }
 
     noBtn.addEventListener('mouseover', moveNoButton);
-    yesBtn.addEventListener('click', () => alert('Anh cũng yêu emmmm nhìu nắm bé bông của anhh! ❤'));
     noBtn.addEventListener('click', () => alert('Đừng chối nữa, em yêu anh mà!'));
+
+    yesBtn.addEventListener('click', () => {
+      document.getElementById('question').style.display = 'none';
+      yesBtn.style.display = 'none';
+      noBtn.style.display = 'none';
+      message.style.display = 'block';
+    });
   </script>
 
   <footer>Made with ❤️ by anh iu của em aka ông xã aka munzinh</footer>
